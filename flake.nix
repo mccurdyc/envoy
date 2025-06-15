@@ -115,6 +115,8 @@
 
             # The current `lockfile` is out of date for 'dynamic_modules_rust_sdk_crate_index'. Please re-run bazel using `CARGO_BAZEL_REPIN=true` if this is expected and the lockfile should be updated.
             env.CARGO_BAZEL_REPIN = true;
+            dontUseCmakeConfigure = true;
+            dontUseGnConfigure = true;
 
             postPatch = ''
                 ${postPatch}
@@ -123,6 +125,7 @@
                 --replace-fail 'crate_universe_dependencies(' 'crate_universe_dependencies(bootstrap=True, ' \
                 --replace-fail 'crates_repository(' 'crates_repository(generator="@@cargo_bazel_bootstrap//:cargo-bazel", '
             '';
+
             preInstall = ''
               sed -i \
                 -e 's,${pkgs.stdenv.shellPackage},__NIXSHELL__,' \
@@ -146,6 +149,10 @@
           ];
 
           buildAttrs = {
+            dontUseCmakeConfigure = true;
+            dontUseGnConfigure = true;
+            dontUseNinjaInstall = true;
+
             # Things needed for buildPhase
             nativeBuildInputs = [
               pkgs.bazel
