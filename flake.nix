@@ -123,6 +123,20 @@
                 --replace-fail 'crate_universe_dependencies(' 'crate_universe_dependencies(bootstrap=True, ' \
                 --replace-fail 'crates_repository(' 'crates_repository(generator="@@cargo_bazel_bootstrap//:cargo-bazel", '
             '';
+            preInstall = ''
+              sed -i \
+                -e 's,${pkgs.stdenv.shellPackage},__NIXSHELL__,' \
+                -e 's,${builtins.storeDir}/[^/]\+/bin/bash,__NIXBASH__,' \
+                $bazelOut/external/local_config_sh/BUILD \
+                $bazelOut/external/rules_rust/util/process_wrapper/private/process_wrapper.sh \
+                $bazelOut/external/rules_rust/crate_universe/src/metadata/cargo_tree_rustc_wrapper.sh
+
+              # Install repinned rules_rust lockfile
+              cp source/extensions/dynamic_modules/sdk/rust/Cargo.Bazel.lock $bazelOut/external/Cargo.Bazel.lock
+
+              # Don't save cargo_bazel_bootstrap or the crate index cache
+              rm -rf $bazelOut/external/cargo_bazel_bootstrap $bazelOut/external/dynamic_modules_rust_sdk_crate_index/.cargo_home $bazelOut/external/dynamic_modules_rust_sdk_crate_index/splicing-output
+            '';
           };
 
           # CARGO_BAZEL_REPIN=true bazel build -c opt envoy
