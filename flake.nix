@@ -55,30 +55,6 @@
           # are hermetic. This is where Nix comes in to play!
           # patches = [];
 
-          # buildBazelPackage is a wrapper of mkDerivation specifically for bazel packages
-          # mkDerivation - https://github.com/NixOS/nixpkgs/blob/master/pkgs/stdenv/generic/make-derivation.nix
-          # Phases - https://nixos.org/manual/nixpkgs/unstable/#sec-stdenv-phases
-          # patchPhase
-          # buildPhase
-          # installPhase
-          # checkPhase
-          #
-          # To be more specific, buildBazelPackage is actually two mkDerivation calls.
-          # One for the fetchPhase (fetchAttrs) and one for buildPhase (buildAttrs).
-          #
-          # You shouldn't be doing too much mucking with derivation phases outside
-          # of fetchAttrs and buildAttrs.
-
-          # Bazel does it's own dependency fetching, but we use nix to make it
-          # hermetic. We've applied patches above to use nix VM paths to make
-          # builds hermetic.
-          fetchAttrs = {
-            hash = "sha256:${pkgs.lib.fakeSha256}";
-
-            # The current `lockfile` is out of date for 'dynamic_modules_rust_sdk_crate_index'. Please re-run bazel using `CARGO_BAZEL_REPIN=true` if this is expected and the lockfile should be updated.
-            env.CARGO_BAZEL_REPIN = true;
-          };
-
           src = pkgs.applyPatches {
             src = ./.;
 
@@ -116,6 +92,38 @@
             # Replaces Envoy's bazel/rules_rust.patch with the Nix one
             mv bazel/nix/rules_rust.patch bazel/rules_rust.patch
           '';
+
+          # buildBazelPackage is a wrapper of mkDerivation specifically for bazel packages
+          # mkDerivation - https://github.com/NixOS/nixpkgs/blob/master/pkgs/stdenv/generic/make-derivation.nix
+          # Phases - https://nixos.org/manual/nixpkgs/unstable/#sec-stdenv-phases
+          # patchPhase
+          # buildPhase
+          # installPhase
+          # checkPhase
+          #
+          # To be more specific, buildBazelPackage is actually two mkDerivation calls.
+          # One for the fetchPhase (fetchAttrs) and one for buildPhase (buildAttrs).
+          #
+          # You shouldn't be doing too much mucking with derivation phases outside
+          # of fetchAttrs and buildAttrs.
+
+          # Bazel does it's own dependency fetching, but we use nix to make it
+          # hermetic. We've applied patches above to use nix VM paths to make
+          # builds hermetic.
+          fetchAttrs = {
+            hash = "sha256:${pkgs.lib.fakeSha256}";
+
+            # The current `lockfile` is out of date for 'dynamic_modules_rust_sdk_crate_index'. Please re-run bazel using `CARGO_BAZEL_REPIN=true` if this is expected and the lockfile should be updated.
+            env.CARGO_BAZEL_REPIN = true;
+
+            postPatch = ''
+                ${postPatch}
+
+              substituteInPlace bazel/dependency_imports.bzl \
+                --replace-fail 'crate_universe_dependencies(' 'crate_universe_dependencies(bootstrap=True, ' \
+                --replace-fail 'crates_repository(' 'crates_repository(generator="@@cargo_bazel_bootstrap//:cargo-bazel", '
+            '';
+          };
 
           # CARGO_BAZEL_REPIN=true bazel build -c opt envoy
           # - https://github.com/envoyproxy/envoy/tree/main/bazel#production-environments
