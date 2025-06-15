@@ -94,22 +94,27 @@
             mkdir -p bazel/nix/
             substitute ${./nix/bazel_nix.BUILD.bazel} bazel/nix/BUILD.bazel \
               --subst-var-by bash "$(type -p bash)"
+
+            # Replace these tools with the paths from Nix
             ln -sf "${pkgs.cargo}/bin/cargo" bazel/nix/cargo
             ln -sf "${pkgs.rustc}/bin/rustc" bazel/nix/rustc
             ln -sf "${pkgs.rustc}/bin/rustdoc" bazel/nix/rustdoc
             ln -sf "${pkgs.rustPlatform.rustLibSrc}" bazel/nix/ruststd
+
             substituteInPlace bazel/dependency_imports.bzl \
               --replace-fail 'crate_universe_dependencies()' 'crate_universe_dependencies(rust_toolchain_cargo_template="@@//bazel/nix:cargo", rust_toolchain_rustc_template="@@//bazel/nix:rustc")' \
               --replace-fail 'crates_repository(' 'crates_repository(rust_toolchain_cargo_template="@@//bazel/nix:cargo", rust_toolchain_rustc_template="@@//bazel/nix:rustc",'
 
+            cp ${./nix/patches/rules_rust.patch} bazel/rules_rust.patch
+
             # uses nix bash instead of /usr/bin/env bash
-            substitute ${./nix/patches/rules_rust_extra.patch} bazel/nix/nix/patches/rules_rust_extra.patch \
+            substitute ${./nix/patches/rules_rust_extra.patch} bazel/nix/rules_rust_extra.patch \
               --subst-var-by bash "$(type -p bash)"
 
             # combines replacing bash and replacing rustc/cargo version with "hermetic"
-            cat bazel/nix/nix/patches/rules_rust_extra.patch bazel/nix/nix/patches/rules_rust.patch > bazel/nix/nix/patches/rules_rust.patch
+            cat bazel/nix/rules_rust_extra.patch bazel/rules_rust.patch > bazel/nix/rules_rust.patch
             # Replaces Envoy's bazel/rules_rust.patch with the Nix one
-            mv bazel/nix/nix/patches/rules_rust.patch bazel/rules_rust.patch
+            mv bazel/nix/rules_rust.patch bazel/rules_rust.patch
           '';
 
           # CARGO_BAZEL_REPIN=true bazel build -c opt envoy
