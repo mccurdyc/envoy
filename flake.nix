@@ -61,7 +61,7 @@
             patchelf
             cacert
             neovim
-            # breakpointHook # debugging
+            breakpointHook # debugging
           ];
 
           buildInputs = [ pkgs.linuxHeaders ];
@@ -76,6 +76,9 @@
             # By convention, these patches are generated like:
             # git format-patch --zero-commit --signoff --no-numbered --minimal --full-index --no-signature
             patches = [
+              # use system Python
+              ./nix/patches/0001-nixpkgs-use-system-Python.patch
+
               # use system C/C++ tools
               ./nix/patches/0003-nixpkgs-use-system-C-C-toolchains.patch
 
@@ -181,7 +184,7 @@
               pkgs.bazel
               pkgs.rustc
               pkgs.cargo
-              # pkgs.breakpointHook # debugging
+              pkgs.git
             ];
             installPhase = ''
               install -Dm0755 bazel-bin/source/exe/envoy-static $out/bin/envoy
