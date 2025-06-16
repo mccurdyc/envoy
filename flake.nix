@@ -51,6 +51,21 @@
           # source/exe/BUILD
           bazelTargets = [ "//source/exe:envoy-static" ];
 
+          nativeBuildInputs = with pkgs; [
+            cmake
+            python3
+            gn
+            go
+            jdk
+            ninja
+            patchelf
+            cacert
+            neovim
+            # breakpointHook # debugging
+          ];
+
+          buildInputs = [ pkgs.linuxHeaders ];
+
           # We will apply patches to how bazel fetches dependencies so that builds
           # are hermetic. This is where Nix comes in to play!
           # patches = [];
@@ -81,7 +96,12 @@
               --replace-fail 'crate_universe_dependencies()' 'crate_universe_dependencies(rust_toolchain_cargo_template="@@//bazel/nix:cargo", rust_toolchain_rustc_template="@@//bazel/nix:rustc")' \
               --replace-fail 'crates_repository(' 'crates_repository(rust_toolchain_cargo_template="@@//bazel/nix:cargo", rust_toolchain_rustc_template="@@//bazel/nix:rustc",'
 
+
+             # patch rules_rust for envoy specifics, but also to support old Bazel
+            # (Bazel 6 doesn't have ctx.watch, but ctx.path is sufficient for our use)
             cp ${./nix/patches/rules_rust.patch} bazel/rules_rust.patch
+            substituteInPlace bazel/repositories.bzl \
+              --replace-fail ', "@envoy//bazel:rules_rust_ppc64le.patch"' ""
 
             # uses nix bash instead of /usr/bin/env bash
             substitute ${./nix/patches/rules_rust_extra.patch} bazel/nix/rules_rust_extra.patch \
@@ -158,7 +178,7 @@
               pkgs.bazel
               pkgs.rustc
               pkgs.cargo
-              pkgs.breakpointHook # debugging
+              # pkgs.breakpointHook # debugging
             ];
             installPhase = ''
               install -Dm0755 bazel-bin/source/exe/envoy-static $out/bin/envoy
@@ -172,6 +192,7 @@
             pkgs.nixpkgs-fmt
             pkgs.nil
             pkgs.deadnix
+            pkgs.statix
             pkgs.cargo
             pkgs.rustc
             pkgs.clang
