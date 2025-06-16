@@ -78,6 +78,9 @@
             patches = [
               # use system C/C++ tools
               ./nix/patches/0003-nixpkgs-use-system-C-C-toolchains.patch
+
+              # bump rules_rust to support newer Rust
+              ./nix/patches/0004-nixpkgs-bump-rules_rust-to-0.60.0.patch
             ];
           };
 
