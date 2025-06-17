@@ -76,9 +76,6 @@
             # By convention, these patches are generated like:
             # git format-patch --zero-commit --signoff --no-numbered --minimal --full-index --no-signature
             patches = [
-              # use system Python
-              ./nix/patches/0001-nixpkgs-use-system-Python.patch
-
               # use system C/C++ tools
               ./nix/patches/0003-nixpkgs-use-system-C-C-toolchains.patch
 
@@ -137,7 +134,7 @@
           # hermetic. We've applied patches above to use nix VM paths to make
           # builds hermetic.
           fetchAttrs = {
-            hash = "sha256:${pkgs.lib.fakeSha256}";
+            hash = "sha256-WTfwOLvum7xAsYiFtcA2IPiY5UyO2SdUDYbeNNYWbfI=";
 
             # The current `lockfile` is out of date for 'dynamic_modules_rust_sdk_crate_index'. Please re-run bazel using `CARGO_BAZEL_REPIN=true` if this is expected and the lockfile should be updated.
             env.CARGO_BAZEL_REPIN = true;
@@ -184,7 +181,6 @@
               pkgs.bazel
               pkgs.rustc
               pkgs.cargo
-              pkgs.git
             ];
             installPhase = ''
               install -Dm0755 bazel-bin/source/exe/envoy-static $out/bin/envoy
