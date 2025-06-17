@@ -171,6 +171,7 @@
             "-c opt envoy"
           ];
 
+
           buildAttrs = {
             dontUseCmakeConfigure = true;
             dontUseGnConfigure = true;
@@ -178,9 +179,10 @@
 
             # Things needed for buildPhase
             nativeBuildInputs = [
-              pkgs.bazel
+              pkgs.bazel_7
               pkgs.rustc
               pkgs.cargo
+              # pkgs.breakpointHook # debugging
             ];
             installPhase = ''
               install -Dm0755 bazel-bin/source/exe/envoy-static $out/bin/envoy
