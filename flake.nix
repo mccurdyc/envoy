@@ -8,22 +8,9 @@
   outputs = { nixpkgs, flake-utils, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = import nixpkgs {
-          inherit system;
-        };
+        pkgs = import nixpkgs { inherit system; };
       in
       {
-        # https://github.com/hsjobeki/nixpkgs/blame/f0efec9cacfa9aef98a3c70fda2753b9825e262f/pkgs/top-level/all-packages.nix#L7018
-        # https://github.com/hsjobeki/nixpkgs/blob/migrate-doc-comments/pkgs/build-support/build-bazel-package/default.nix#L8:C1
-        #
-        # This was built from just continually running `nix build` and checking for errors
-        # and cross referencing the Envoy bazel docs.
-        #
-        # And seeing what failed, then adding it to this list and cross-referencing
-        # https://github.com/NixOS/nixpkgs/blob/2365292db4959fe97a808b77beb8b9c0459944de/pkgs/by-name/en/envoy/package.nix
-        #
-        # I did all of this because the `wasmRuntime` override in nixpkgs.envoy
-        # would not work and I wanted to apply patches for the WASM dependencies.
         packages.default = pkgs.buildBazelPackage rec {
           name = "envoy";
           version = "cmccurdy-build";
@@ -52,10 +39,6 @@
           # https://discourse.nixos.org/t/bazel-enablenixhacks/15203
           buildInputs = [ pkgs.linuxHeaders ];
 
-          # We will apply patches to how bazel fetches dependencies so that builds
-          # are hermetic. This is where Nix comes in to play!
-          # patches = [];
-
           src = pkgs.applyPatches {
             src = ./.;
 
@@ -69,6 +52,7 @@
               ./nix/patches/0004-nixpkgs-bump-rules_rust-to-0.60.0.patch
             ];
 
+            # Removes the Envoy .bazelversion which says to use 7.6.0.
             postPatch = ''
               chmod -R +w .
               rm ./.bazelversion
@@ -90,8 +74,7 @@
               --replace-fail 'crate_universe_dependencies()' 'crate_universe_dependencies(rust_toolchain_cargo_template="@@//bazel/nix:cargo", rust_toolchain_rustc_template="@@//bazel/nix:rustc")' \
               --replace-fail 'crates_repository(' 'crates_repository(rust_toolchain_cargo_template="@@//bazel/nix:cargo", rust_toolchain_rustc_template="@@//bazel/nix:rustc",'
 
-
-             # patch rules_rust for envoy specifics, but also to support old Bazel
+            # patch rules_rust for envoy specifics, but also to support old Bazel
             # (Bazel 6 doesn't have ctx.watch, but ctx.path is sufficient for our use)
             cp ${./nix/patches/rules_rust.patch} bazel/rules_rust.patch
             substituteInPlace bazel/repositories.bzl \
@@ -107,27 +90,11 @@
             mv bazel/nix/rules_rust.patch bazel/rules_rust.patch
           '';
 
-          # buildBazelPackage is a wrapper of mkDerivation specifically for bazel packages
-          # mkDerivation - https://github.com/NixOS/nixpkgs/blob/master/pkgs/stdenv/generic/make-derivation.nix
-          # Phases - https://nixos.org/manual/nixpkgs/unstable/#sec-stdenv-phases
-          # patchPhase
-          # buildPhase
-          # installPhase
-          # checkPhase
-          #
-          # To be more specific, buildBazelPackage is actually two mkDerivation calls.
-          # One for the fetchPhase (fetchAttrs) and one for buildPhase (buildAttrs).
-          #
-          # You shouldn't be doing too much mucking with derivation phases outside
-          # of fetchAttrs and buildAttrs.
-
-          # Bazel does it's own dependency fetching, but we use nix to make it
-          # hermetic. We've applied patches above to use nix VM paths to make
-          # builds hermetic.
           fetchAttrs = {
             hash = pkgs.lib.fakeHash;
 
-            # The current `lockfile` is out of date for 'dynamic_modules_rust_sdk_crate_index'. Please re-run bazel using `CARGO_BAZEL_REPIN=true` if this is expected and the lockfile should be updated.
+            # The current `lockfile` is out of date for 'dynamic_modules_rust_sdk_crate_index'.
+            #  Please re-run bazel using `CARGO_BAZEL_REPIN=true` if this is expected and the lockfile should be updated.
             env.CARGO_BAZEL_REPIN = true;
             dontUseCmakeConfigure = true;
             dontUseGnConfigure = true;
