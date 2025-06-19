@@ -42,9 +42,15 @@
           src = pkgs.applyPatches {
             src = ./.;
 
+            # bazel/dependency_imports.bzl:2:6: Encountered error while reading extension file 'requirements.bzl': no such package '@base_pip3//': no such package '@python3_12_host//':
+            # load("@base_pip3//:requirements.bzl", pip_dependencies = "install_deps")
+
             # By convention, these patches are generated like:
             # git format-patch --zero-commit --signoff --no-numbered --minimal --full-index --no-signature
             patches = [
+              # use system Python
+              ./nix/patches/0001-nixpkgs-use-system-Python.patch
+
               # use system C/C++ tools
               ./nix/patches/0003-nixpkgs-use-system-C-C-toolchains.patch
 
