@@ -10,14 +10,6 @@
       let
         pkgs = import nixpkgs {
           inherit system;
-          overlays = [
-            (final: prev: {
-              # must match .bazelversion (7.6.0)
-              bazel_7 = prev.bazel_7.override {
-                version = "7.6.0";
-              };
-            })
-          ];
         };
       in
       {
@@ -35,7 +27,7 @@
         packages.default = pkgs.buildBazelPackage rec {
           name = "envoy";
           version = "cmccurdy-build";
-          bazel = pkgs.bazel_7;
+          bazel = pkgs.bazel_6;
 
           # enableNixHacks option (enabled by default) that attempts to patch Bazel to use local resources and avoid network fetches.
           enableNixHacks = true;
@@ -50,7 +42,7 @@
             patchelf
             cacert
 
-            bazel_7
+            bazel_6
 
             # debugging
             # breakpointHook
@@ -76,6 +68,11 @@
               # bump rules_rust to support newer Rust
               ./nix/patches/0004-nixpkgs-bump-rules_rust-to-0.60.0.patch
             ];
+
+            postPatch = ''
+              chmod -R +w .
+              rm ./.bazelversion
+            '';
           };
 
           postPatch = ''
@@ -128,7 +125,7 @@
           # hermetic. We've applied patches above to use nix VM paths to make
           # builds hermetic.
           fetchAttrs = {
-            hash = "sha256-WTfwOLvum7xAsYiFtcA2IPiY5UyO2SdUDYbeNNYWbfI=";
+            hash = pkgs.lib.fakeHash;
 
             # The current `lockfile` is out of date for 'dynamic_modules_rust_sdk_crate_index'. Please re-run bazel using `CARGO_BAZEL_REPIN=true` if this is expected and the lockfile should be updated.
             env.CARGO_BAZEL_REPIN = true;
@@ -136,7 +133,7 @@
             dontUseGnConfigure = true;
 
             postPatch = ''
-                ${postPatch}
+              ${postPatch}
 
               substituteInPlace bazel/dependency_imports.bzl \
                 --replace-fail 'crate_universe_dependencies(' 'crate_universe_dependencies(bootstrap=True, ' \
@@ -207,7 +204,7 @@
             pkgs.clang
             pkgs.libclang
             pkgs.stdenv.cc
-            pkgs.bazel_7
+            pkgs.bazel_6
           ];
           LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
           BINDGEN_EXTRA_CLANG_ARGS = "--include-directory=${pkgs.stdenv.cc.libc.dev}/include";
