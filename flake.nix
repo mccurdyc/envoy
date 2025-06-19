@@ -19,17 +19,6 @@
             })
           ];
         };
-
-        packages = with pkgs; [
-          nil
-          deadnix
-          statix
-          nixpkgs-fmt
-
-          # must match .bazelversion (7.6.0)
-          bazel_7
-          cargo
-        ];
       in
       {
         # https://github.com/hsjobeki/nixpkgs/blame/f0efec9cacfa9aef98a3c70fda2753b9825e262f/pkgs/top-level/all-packages.nix#L7018
@@ -48,8 +37,8 @@
           version = "cmccurdy-build";
           bazel = pkgs.bazel_7;
 
-          # source/exe/BUILD
-          bazelTargets = [ "//source/exe:envoy-static" ];
+          # enableNixHacks option (enabled by default) that attempts to patch Bazel to use local resources and avoid network fetches.
+          enableNixHacks = true;
 
           nativeBuildInputs = with pkgs; [
             cmake
@@ -60,10 +49,15 @@
             ninja
             patchelf
             cacert
+
+            bazel_7
+
+            # debugging
+            # breakpointHook
             neovim
-            breakpointHook # debugging
           ];
 
+          # https://discourse.nixos.org/t/bazel-enablenixhacks/15203
           buildInputs = [ pkgs.linuxHeaders ];
 
           # We will apply patches to how bazel fetches dependencies so that builds
@@ -167,8 +161,26 @@
 
           # CARGO_BAZEL_REPIN=true bazel build -c opt envoy
           # - https://github.com/envoyproxy/envoy/tree/main/bazel#production-environments
+          removeRulesCC = false;
+          removeLocalConfigCc = true;
+          removeLocal = false;
+
+          # source/exe/BUILD
+          bazelTargets = [ "//source/exe:envoy-static" ];
+
+          bazelFetchFlags = [
+            # Force use of system Rust defined in our rules_rust patch
+            "--extra_toolchains=//bazel/nix:rust_nix_aarch64,//bazel/nix:rust_nix_x86_64"
+          ];
+
           bazelBuildFlags = [
-            "-c opt envoy"
+            "-c opt"
+            "--verbose_failures"
+            "--config=gcc"
+            "--nofetch" # https://discourse.nixos.org/t/bazel-enablenixhacks/15203
+
+            # Force use of system Rust defined in our rules_rust patch
+            "--extra_toolchains=//bazel/nix:rust_nix_aarch64,//bazel/nix:rust_nix_x86_64"
           ];
 
 
@@ -177,13 +189,6 @@
             dontUseGnConfigure = true;
             dontUseNinjaInstall = true;
 
-            # Things needed for buildPhase
-            nativeBuildInputs = [
-              pkgs.bazel_7
-              pkgs.rustc
-              pkgs.cargo
-              # pkgs.breakpointHook # debugging
-            ];
             installPhase = ''
               install -Dm0755 bazel-bin/source/exe/envoy-static $out/bin/envoy
             '';
@@ -202,6 +207,7 @@
             pkgs.clang
             pkgs.libclang
             pkgs.stdenv.cc
+            pkgs.bazel_7
           ];
           LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
           BINDGEN_EXTRA_CLANG_ARGS = "--include-directory=${pkgs.stdenv.cc.libc.dev}/include";
