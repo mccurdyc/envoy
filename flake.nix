@@ -32,7 +32,7 @@
             bazel_6
 
             # debugging
-            # breakpointHook
+            breakpointHook
             neovim
           ];
 
@@ -42,14 +42,13 @@
           src = pkgs.applyPatches {
             src = ./.;
 
-            # bazel/dependency_imports.bzl:2:6: Encountered error while reading extension file 'requirements.bzl': no such package '@base_pip3//': no such package '@python3_12_host//':
-            # load("@base_pip3//:requirements.bzl", pip_dependencies = "install_deps")
-
             # By convention, these patches are generated like:
-            # git format-patch --zero-commit --signoff --no-numbered --minimal --full-index --no-signature
+            # git commit
+            # git format-patch -1 HEAD --zero-commit --signoff --no-numbered --minimal --full-index --no-signature
+            # git reset --hard HEAD~1
             patches = [
               # use system Python
-              ./nix/patches/0001-nixpkgs-use-system-Python.patch
+              ./nix/patches/0001-python.patch
 
               # use system C/C++ tools
               ./nix/patches/0003-nixpkgs-use-system-C-C-toolchains.patch
@@ -146,8 +145,6 @@
           bazelBuildFlags = [
             "-c opt"
             "--verbose_failures"
-            "--config=gcc"
-            "--nofetch" # https://discourse.nixos.org/t/bazel-enablenixhacks/15203
 
             # Force use of system Rust defined in our rules_rust patch
             "--extra_toolchains=//bazel/nix:rust_nix_aarch64,//bazel/nix:rust_nix_x86_64"

@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "Colton J. McCurdy" <mccurdyc22@gmail.com>
+Date: Fri, 20 Jun 2025 20:17:30 -0400
+Subject: [PATCH] removes all
+
+Signed-off-by: Colton J. McCurdy <mccurdyc22@gmail.com>
+---
+ bazel/python_dependencies.bzl | 32 +-------------------------------
+ 1 file changed, 1 insertion(+), 31 deletions(-)
+
+diff --git a/bazel/python_dependencies.bzl b/bazel/python_dependencies.bzl
+index 9867dc3a46dbe780eb3c02bad8f6a22a2c7fd97e..9920b77de263d04588ed345cbec822eb7995fd3b 100644
+--- a/bazel/python_dependencies.bzl
++++ b/bazel/python_dependencies.bzl
+@@ -1,32 +1,2 @@
+-load("@com_google_protobuf//bazel:system_python.bzl", "system_python")
+-load("@envoy_toolshed//:packages.bzl", "load_packages")
+-load("@rules_python//python:pip.bzl", "pip_parse")
+-
+ def envoy_python_dependencies():
+-    # TODO(phlax): rename base_pip3 -> pip3 and remove this
+-    load_packages()
+-    pip_parse(
+-        name = "base_pip3",
+-        python_interpreter_target = "@python3_12_host//:python",
+-        requirements_lock = "@envoy//tools/base:requirements.txt",
+-        extra_pip_args = ["--require-hashes"],
+-    )
+-
+-    pip_parse(
+-        name = "dev_pip3",
+-        python_interpreter_target = "@python3_12_host//:python",
+-        requirements_lock = "@envoy//tools/dev:requirements.txt",
+-        extra_pip_args = ["--require-hashes"],
+-    )
+-
+-    pip_parse(
+-        name = "fuzzing_pip3",
+-        python_interpreter_target = "@python3_12_host//:python",
+-        requirements_lock = "@rules_fuzzing//fuzzing:requirements.txt",
+-        extra_pip_args = ["--require-hashes"],
+-    )
+-
+-    system_python(
+-        name = "system_python",
+-        minimum_python_version = "3.7",
+-    )
++  return
