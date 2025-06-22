@@ -16,9 +16,6 @@
           version = "cmccurdy-build";
           bazel = pkgs.bazel_6;
 
-          # enableNixHacks option (enabled by default) that attempts to patch Bazel to use local resources and avoid network fetches.
-          enableNixHacks = true;
-
           nativeBuildInputs = with pkgs; [
             cmake
             python3
@@ -29,10 +26,8 @@
             patchelf
             cacert
 
-            bazel_6
-
             # debugging
-            breakpointHook
+            # breakpointHook
             neovim
           ];
 
@@ -48,7 +43,7 @@
             # git reset --hard HEAD~1
             patches = [
               # use system Python
-              ./nix/patches/0001-python.patch
+              ./nix/patches/0001-nixpkgs-use-system-Python.patch
 
               # use system C/C++ tools
               ./nix/patches/0003-nixpkgs-use-system-C-C-toolchains.patch
@@ -144,7 +139,6 @@
 
           bazelBuildFlags = [
             "-c opt"
-            "--verbose_failures"
 
             # Force use of system Rust defined in our rules_rust patch
             "--extra_toolchains=//bazel/nix:rust_nix_aarch64,//bazel/nix:rust_nix_x86_64"
