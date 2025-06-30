@@ -14,14 +14,17 @@
         # https://nixos.org/manual/nixpkgs/stable/#sec-pkg-overrideAttrs
         # Function arguments can be omitted entirely if there is no need to access previousAttrs or finalAttrs.
         # overrideAttrs should be preferred in (almost) all cases to overrideDerivation
-        packages.default = pkgs.envoy.overrideAttrs (previousAttrs: {
+        packages.default = pkgs.buildBazelPackage {
           src = pkgs.applyPatches
             {
               src = ./.;
               patches = [ ];
             };
 
-          nativeBuildInputs = (previousAttrs.nativeBuildInputs or [ ]) ++ [
+          fetchAttrs = { };
+          buildAttrs = { };
+
+          nativeBuildInputs = [
             # Envoy expects 7.6.0
             pkgs.bazel_7
             # If you use version 7.6.0, you must also enable these "nix hacks" for version 7.
@@ -30,10 +33,22 @@
             # debugging
             pkgs.breakpointHook
           ];
+
           # Envoy expects 7.6.0
           bazel = pkgs.bazel_7;
+          buildAttrs = {
+            nativeBuildInputs = [
+              # Envoy expects 7.6.0
+              pkgs.bazel_7
+              # If you use version 7.6.0, you must also enable these "nix hacks" for version 7.
+              (pkgs.bazel_7.override { enableNixHacks = true; })
+
+              # debugging
+              pkgs.breakpointHook
+            ];
+          };
           wasmRuntime = "wasmtime";
-        });
+        };
 
         formatter = pkgs.nixpkgs-fmt;
         devShells.default = pkgs.mkShell {
